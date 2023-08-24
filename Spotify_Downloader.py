@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-
+import re
 
 load_dotenv()
 
@@ -23,7 +23,6 @@ api_key = os.getenv("YOUTUBE_API_KEY")
 youtube_client = os.getenv("YOUTUBE_API_OAUTH_CLIENT_ID")
 youtube_secret = os.getenv("YOUTUBE_API_OAUTH_CLIENT_SECRET")
 youtube_scopes = ['https://www.googleapis.com/auth/youtube']
-
 
 playlist_id_global = ""
 
@@ -43,9 +42,9 @@ def search_youtube_video(song_name, artist_name=None, album_name=None, skip_lyri
         query += f" {album_name}"
 
     if not skip_lyrics:
-        query += " Song Lyrics"
+        query += ""
     else:
-        query += " Full Song"
+        query += " Song"
 
     print(f"Searching YouTube with query: {query}")
 
@@ -56,9 +55,6 @@ def search_youtube_video(song_name, artist_name=None, album_name=None, skip_lyri
         q=query,
         part="id,snippet",
         maxResults=2,  # Retrieve up to two results for user choice
-        type="video",
-        videoDuration="medium",
-        videoDefinition="high",
     ).execute()
 
     # Extract and return the links and titles of the matching videos
@@ -167,6 +163,9 @@ def choose_download():
         if selected_playlist_index:
             selected_playlist = playlist_listbox.get(selected_playlist_index[0])
             playlist_id = get_playlist_id_by_name(selected_playlist)
+            print(playlist_id)
+            if playlist_id is None:
+                playlist_id = playlist_id_global
             if playlist_id:
                 playlist = sp.playlist_items(playlist_id)
                 for item in playlist["items"]:
@@ -196,9 +195,9 @@ def choose_download():
 
                 # Create new download buttons
                 for idx, video_info in enumerate(video_info_list, start=1):
-                    btn = tk.Button(download_button_frame, text=f"Download Option {idx}",
+                    btn = tk.Button(download_button_frame, text=f"Download Option {idx}", font=("Helvetica", 20),
                                     command=lambda v=video_info: download_song(v))
-                    btn.pack(side=tk.LEFT, padx=5)
+                    btn.pack(side=tk.LEFT, padx=40)
                     download_buttons.append(btn)
 
                     # Store artist and album names in video info
@@ -211,9 +210,13 @@ def choose_download():
 def download_whole_playlist():
     global download_folder
     selected_playlist_index = playlist_listbox.curselection()
+    if selected_playlist_index == ():
+        selected_playlist_index = playlist_id_global
     if selected_playlist_index:
         selected_playlist = playlist_listbox.get(selected_playlist_index[0])
         playlist_id = get_playlist_id_by_name(selected_playlist)
+        if playlist_id is None:
+            playlist_id = playlist_id_global
         if playlist_id:
             try:
                 playlist = sp.playlist_items(playlist_id)
@@ -253,6 +256,61 @@ def create_youtube_playlist(playlist_title, playlist_description, credential):
     response = request.execute()
 
     return response["id"]
+
+
+def fetch_spotify_playlist(playlist_link):
+    global playlist_id_global
+    # Extract playlist ID or URI from the link
+    playlist_id = re.search(r'playlist\/(\w+)', playlist_link)
+    if playlist_id:
+        playlist_id = playlist_id.group(1)
+        playlist_id_global = playlist_id
+        playlist = sp.playlist_items(playlist_id)
+
+        playlist_info = {
+            "playlist": playlist,
+            "songs_info": []  # Store artist and album names for each song
+        }
+
+        for item in playlist["items"]:
+            track_name = item["track"]["name"]
+            artist_name = item["track"]["artists"][0]["name"]
+            album_name = item["track"]["album"]["name"]
+            playlist_info["songs_info"].append({
+                "track_name": track_name,
+                "artist_name": artist_name,
+                "album_name": album_name
+            })
+
+        return playlist_info
+
+    else:
+        return None
+
+
+def display_playlist_details(playlist):
+    song_listbox.delete(0, tk.END)  # Clear previous results
+
+    for index, item in enumerate(playlist["items"], start=1):
+        track_name = item["track"]["name"]
+        artist_name = item["track"]["artists"][0]["name"]
+        album_name = item["track"]["album"]["name"]
+        if track_name:  # Exclude songs with blank names
+            song_listbox.insert(tk.END, f"{index}. {track_name}")
+
+
+def search_spotify_playlist():
+    playlist_link = spotify_playlist_entry.get()  # Get the entered playlist link
+    playlist_info = fetch_spotify_playlist(playlist_link)
+    if playlist_info:
+        display_playlist_details(playlist_info["playlist"])  # Display playlist songs
+
+        # for song_info in playlist_info["songs_info"]:
+        #     song_name = song_info["track_name"]
+        #     artist_name = song_info["artist_name"]
+        #     album_name = song_info["album_name"]
+        #     video_info_list = search_youtube_video(song_name, artist_name, album_name, skip_lyrics=True)
+
 
 root = tk.Tk()
 root.title("Spotify Playlist Downloader")
@@ -316,7 +374,7 @@ def create_youtube_playlist_from_spotify():
 
 
 # Create the listbox to display playlists
-playlist_listbox = tk.Listbox(root, font=("Helvetica", 14))  # Adjust font size here
+playlist_listbox = tk.Listbox(root, font=("Helvetica", 15))  # Adjust font size here
 playlist_listbox.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.BOTH, expand=False)
 playlist_listbox.config(height=90, width=50)  # Adjust height here
 
@@ -326,17 +384,26 @@ playlist_scrollbar.pack(side=tk.LEFT, fill=tk.Y)
 playlist_listbox.config(yscrollcommand=playlist_scrollbar.set)
 
 # Create the listbox to display songs
-song_listbox = tk.Listbox(root, font=("Helvetica", 14))  # Adjust font size here
+song_listbox = tk.Listbox(root, font=("Helvetica", 15))  # Adjust font size here
 song_listbox.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.BOTH, expand=False)
-song_listbox.config(height=90,width=70)  # Adjust height here
+song_listbox.config(height=90, width=70)  # Adjust height here
 
 song_scrollbar = ttk.Scrollbar(root, orient=tk.VERTICAL, command=song_listbox.yview)
 song_scrollbar.pack(side=tk.LEFT, fill=tk.Y)
 song_listbox.config(yscrollcommand=song_scrollbar.set)
 
-video_info_label = tk.Label(root, text="", font=("Helvetica", 12), justify="left")
+video_info_label = tk.Label(root, text="", font=("Helvetica", 15), justify="left")
 video_info_label.pack(pady=20, padx=30)
 video_info_label.config(wraplength=700, height=10)
+
+# Add a text entry widget for the Spotify playlist link
+spotify_playlist_entry = tk.Entry(root, font=("Helvetica", 14))
+spotify_playlist_entry.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X, expand=True)
+
+# Add a button to initiate the search for the Spotify playlist
+search_playlist_button = tk.Button(root, text="Search Playlist", font=("Helvetica", 14),
+                                   command=search_spotify_playlist)
+search_playlist_button.pack(side=tk.TOP, padx=10, pady=10)
 
 get_playlists_button = tk.Button(root, text="Get Playlists", font=("Helvetica", 20),
                                  command=get_playlists)
