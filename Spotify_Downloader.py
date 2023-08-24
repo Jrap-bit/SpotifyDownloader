@@ -50,14 +50,12 @@ def search_youtube_video(song_name, artist_name=None, album_name=None, skip_lyri
 
     youtube = build("youtube", "v3", developerKey=api_key)
 
-    # Perform the search query with additional filters
     search_response = youtube.search().list(
         q=query,
         part="id,snippet",
-        maxResults=2,  # Retrieve up to two results for user choice
+        maxResults=2,
     ).execute()
 
-    # Extract and return the links and titles of the matching videos
     video_info = []
     for search_result in search_response.get("items", []):
         if search_result["id"]["kind"] == "youtube#video":
@@ -66,25 +64,23 @@ def search_youtube_video(song_name, artist_name=None, album_name=None, skip_lyri
             video_link = f"https://www.youtube.com/watch?v={video_id}"
             video_info.append({"title": video_title, "link": video_link})
 
-    return video_info[:2]  # Return up to two video links
+    return video_info[:2]
 
 
-# Function to get all playlists and display them
 def get_playlists():
     try:
         playlists = sp.user_playlists(username)
-        playlist_listbox.delete(0, tk.END)  # Clear previous results
+        playlist_listbox.delete(0, tk.END)
 
         for index, playlist in enumerate(playlists['items'], start=1):
             playlist_name = playlist['name']
-            if playlist_name:  # Exclude playlists with blank names
+            if playlist_name:
                 playlist_listbox.insert(tk.END, f"{index}. {playlist_name}")
 
     except Exception as e:
         messagebox.showerror("Error", f"Error occurred: {e}")
 
 
-# Function to get the songs of the selected playlist and display them
 def get_playlist_songs(event):
     global playlist_id_global
     selected_index = playlist_listbox.curselection()
@@ -95,18 +91,17 @@ def get_playlist_songs(event):
         if playlist_id:
             try:
                 playlist = sp.playlist_items(playlist_id)
-                song_listbox.delete(0, tk.END)  # Clear previous results
+                song_listbox.delete(0, tk.END)
 
                 for index, item in enumerate(playlist["items"], start=1):
                     track_name = item["track"]["name"]
-                    if track_name:  # Exclude songs with blank names
+                    if track_name:
                         song_listbox.insert(tk.END, f"{index}. {track_name}")
 
             except Exception as e:
                 messagebox.showerror("Error", f"Error occurred: {e}")
 
 
-# Function to get the ID of the selected playlist by its name
 def get_playlist_id_by_name(playlist_name):
     playlists = sp.user_playlists(username)
     for index, playlist in enumerate(playlists['items'], start=1):
@@ -121,14 +116,11 @@ def download_youtube_audio(url, output_folder):
         audio_stream = yt.streams.filter(only_audio=True, file_extension='mp4').first()
         if audio_stream:
             audio_stream.download(output_folder)
-            # Get the downloaded file path
             downloaded_file_path = os.path.join(output_folder, audio_stream.default_filename)
 
-            # Convert MP4 to MP3
             mp3_file_path = os.path.splitext(downloaded_file_path)[0] + '.mp3'
             ffmpeg_extract_audio(downloaded_file_path, mp3_file_path)
 
-            # Delete the original MP4 file
             os.remove(downloaded_file_path)
 
             print(f"Downloaded and converted: {yt.title}")
@@ -187,26 +179,22 @@ def choose_download():
 
                 video_info_label.config(text=video_info_text)
 
-                # Clear and configure download button options
                 download_button_frame.pack_forget()
                 download_button_frame.pack(side=tk.TOP, pady=5, fill=tk.X)
                 for btn in download_buttons:
                     btn.destroy()
 
-                # Create new download buttons
                 for idx, video_info in enumerate(video_info_list, start=1):
                     btn = tk.Button(download_button_frame, text=f"Download Option {idx}", font=("Helvetica", 20),
                                     command=lambda v=video_info: download_song(v))
                     btn.pack(side=tk.LEFT, padx=40)
                     download_buttons.append(btn)
 
-                    # Store artist and album names in video info
                     video_info["song_name"] = song_name
                     video_info["artist_name"] = artist_name
                     video_info["album_name"] = album_name
 
 
-# Function to download the whole playlist
 def download_whole_playlist():
     global download_folder
     selected_playlist_index = playlist_listbox.curselection()
@@ -224,16 +212,15 @@ def download_whole_playlist():
                     track_name = item["track"]["name"]
                     artist_name = item["track"]["artists"][0]["name"]
                     album_name = item["track"]["album"]["name"]
-                    video_info_list = search_youtube_video(track_name, artist_name, album_name)
-                    if video_info_list:
-                        # Download the best result directly
-                        selected_video_info = video_info_list[0]
-                        video_link = selected_video_info["link"]
-                        try:
-                            # Download the audio and specify the output folder
-                            download_youtube_audio(video_link, download_folder)
-                        except Exception as e:
-                            print(f"Error occurred: {e}")
+                    if track_name:
+                        video_info_list = search_youtube_video(track_name, artist_name, album_name)
+                        if video_info_list:
+                            selected_video_info = video_info_list[0]
+                            video_link = selected_video_info["link"]
+                            try:
+                                download_youtube_audio(video_link, download_folder)
+                            except Exception as e:
+                                print(f"Error occurred: {e}")
                 messagebox.showinfo("Download", "Downloading the whole playlist")
 
             except Exception as e:
@@ -243,7 +230,6 @@ def download_whole_playlist():
 def create_youtube_playlist(playlist_title, playlist_description, credential):
     youtube = build("youtube", "v3", credentials=credential)
 
-    # Create a new playlist
     request = youtube.playlists().insert(
         part="snippet",
         body={
@@ -260,7 +246,6 @@ def create_youtube_playlist(playlist_title, playlist_description, credential):
 
 def fetch_spotify_playlist(playlist_link):
     global playlist_id_global
-    # Extract playlist ID or URI from the link
     playlist_id = re.search(r'playlist\/(\w+)', playlist_link)
     if playlist_id:
         playlist_id = playlist_id.group(1)
@@ -269,7 +254,7 @@ def fetch_spotify_playlist(playlist_link):
 
         playlist_info = {
             "playlist": playlist,
-            "songs_info": []  # Store artist and album names for each song
+            "songs_info": []
         }
 
         for item in playlist["items"]:
@@ -289,27 +274,21 @@ def fetch_spotify_playlist(playlist_link):
 
 
 def display_playlist_details(playlist):
-    song_listbox.delete(0, tk.END)  # Clear previous results
+    song_listbox.delete(0, tk.END)
 
     for index, item in enumerate(playlist["items"], start=1):
         track_name = item["track"]["name"]
         artist_name = item["track"]["artists"][0]["name"]
         album_name = item["track"]["album"]["name"]
-        if track_name:  # Exclude songs with blank names
+        if track_name:
             song_listbox.insert(tk.END, f"{index}. {track_name}")
 
 
 def search_spotify_playlist():
-    playlist_link = spotify_playlist_entry.get()  # Get the entered playlist link
+    playlist_link = spotify_playlist_entry.get()
     playlist_info = fetch_spotify_playlist(playlist_link)
     if playlist_info:
-        display_playlist_details(playlist_info["playlist"])  # Display playlist songs
-
-        # for song_info in playlist_info["songs_info"]:
-        #     song_name = song_info["track_name"]
-        #     artist_name = song_info["artist_name"]
-        #     album_name = song_info["album_name"]
-        #     video_info_list = search_youtube_video(song_name, artist_name, album_name, skip_lyrics=True)
+        display_playlist_details(playlist_info["playlist"])
 
 
 root = tk.Tk()
@@ -319,7 +298,7 @@ root.geometry("1500x900")
 
 def authenticate_google():
     flow = InstalledAppFlow.from_client_secrets_file(
-        'client_secrets.json',  # The JSON file containing your client ID and secret
+        'client_secrets.json',
         youtube_scopes
     )
     credentials = flow.run_local_server(port=0)
@@ -333,7 +312,7 @@ def create_youtube_playlist_from_spotify():
     if selected_playlist_index:
         selected_playlist = playlist_listbox.get(selected_playlist_index[0])
         playlist_title = selected_playlist.split(". ", 1)[1]
-        playlist_description = "YouTube playlist created from Spotify playlist"
+        playlist_description = "Created by TuneLink"
 
         credentials = authenticate_google()
         youtube = build('youtube', 'v3', credentials=credentials)
@@ -341,7 +320,6 @@ def create_youtube_playlist_from_spotify():
         youtube_playlist_id = create_youtube_playlist(playlist_title, playlist_description, credentials)
         youtube_playlist_link = f"https://www.youtube.com/playlist?list={youtube_playlist_id}"
 
-        # Get the songs from the selected Spotify playlist
         selected_playlist_name = playlist_listbox.get(selected_playlist_index[0])
         selected_playlist_id = get_playlist_id_by_name(selected_playlist_name)
         if selected_playlist_id is None:
@@ -353,44 +331,40 @@ def create_youtube_playlist_from_spotify():
                 artist_name = item["track"]["artists"][0]["name"]
                 album_name = item["track"]["album"]["name"]
 
-                # Search for YouTube videos matching the song
-                video_info_list = search_youtube_video(track_name, artist_name, album_name, skip_lyrics=True)
+                if track_name:
+                    video_info_list = search_youtube_video(track_name, artist_name, album_name, skip_lyrics=True)
 
-                if video_info_list:
-                    # Add the first video from the search results to the YouTube playlist
-                    selected_video_info = video_info_list[0]
-                    video_id = selected_video_info["link"].split("v=")[1]
-                    youtube.playlistItems().insert(
-                        part="snippet",
-                        body={
-                            "snippet": {
-                                "playlistId": youtube_playlist_id,
-                                "resourceId": {
-                                    "kind": "youtube#video",
-                                    "videoId": video_id
+                    if video_info_list:
+                        selected_video_info = video_info_list[0]
+                        video_id = selected_video_info["link"].split("v=")[1]
+                        youtube.playlistItems().insert(
+                            part="snippet",
+                            body={
+                                "snippet": {
+                                    "playlistId": youtube_playlist_id,
+                                    "resourceId": {
+                                        "kind": "youtube#video",
+                                        "videoId": video_id
+                                    }
                                 }
                             }
-                        }
-                    ).execute()
+                        ).execute()
 
         messagebox.showinfo("YouTube Playlist Created", f"Your YouTube playlist has been created!\n"
                                                         f"Playlist Link: {youtube_playlist_link}")
 
 
-# Create the listbox to display playlists
-playlist_listbox = tk.Listbox(root, font=("Helvetica", 15))  # Adjust font size here
+playlist_listbox = tk.Listbox(root, font=("Helvetica", 15))
 playlist_listbox.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.BOTH, expand=False)
-playlist_listbox.config(height=90, width=40)  # Adjust height here
+playlist_listbox.config(height=90, width=40)
 
-# Create scrollbar for the playlist listbox
 playlist_scrollbar = ttk.Scrollbar(root, orient=tk.VERTICAL, command=playlist_listbox.yview)
 playlist_scrollbar.pack(side=tk.LEFT, fill=tk.Y)
 playlist_listbox.config(yscrollcommand=playlist_scrollbar.set)
 
-# Create the listbox to display songs
-song_listbox = tk.Listbox(root, font=("Helvetica", 15))  # Adjust font size here
+song_listbox = tk.Listbox(root, font=("Helvetica", 15))
 song_listbox.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.BOTH, expand=False)
-song_listbox.config(height=90, width=50)  # Adjust height here
+song_listbox.config(height=90, width=50)
 
 song_scrollbar = ttk.Scrollbar(root, orient=tk.VERTICAL, command=song_listbox.yview)
 song_scrollbar.pack(side=tk.LEFT, fill=tk.Y)
@@ -400,12 +374,10 @@ video_info_label = tk.Label(root, text="", font=("Helvetica", 15), justify="left
 video_info_label.pack(pady=20, padx=30)
 video_info_label.config(wraplength=700, height=10)
 
-# Add a text entry widget for the Spotify playlist link
-spotify_playlist_entry = tk.Entry(root, font=("Helvetica", 14))
+spotify_playlist_entry = tk.Entry(root, font=("Helvetica", 15))
 spotify_playlist_entry.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X, expand=True)
 
-# Add a button to initiate the search for the Spotify playlist
-search_playlist_button = tk.Button(root, text="Search Playlist", font=("Helvetica", 14),
+search_playlist_button = tk.Button(root, text="Search Playlist", font=("Helvetica", 20),
                                    command=search_spotify_playlist)
 search_playlist_button.pack(side=tk.TOP, padx=10, pady=10)
 
