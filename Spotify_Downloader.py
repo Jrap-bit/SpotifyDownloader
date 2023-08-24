@@ -328,6 +328,8 @@ def authenticate_google():
 
 def create_youtube_playlist_from_spotify():
     selected_playlist_index = playlist_listbox.curselection()
+    if selected_playlist_index == ():
+        selected_playlist_index = playlist_id_global
     if selected_playlist_index:
         selected_playlist = playlist_listbox.get(selected_playlist_index[0])
         playlist_title = selected_playlist.split(". ", 1)[1]
@@ -342,6 +344,8 @@ def create_youtube_playlist_from_spotify():
         # Get the songs from the selected Spotify playlist
         selected_playlist_name = playlist_listbox.get(selected_playlist_index[0])
         selected_playlist_id = get_playlist_id_by_name(selected_playlist_name)
+        if selected_playlist_id is None:
+            selected_playlist_id = playlist_id_global
         if selected_playlist_id:
             selected_playlist = sp.playlist_items(selected_playlist_id)
             for item in selected_playlist["items"]:
@@ -376,7 +380,7 @@ def create_youtube_playlist_from_spotify():
 # Create the listbox to display playlists
 playlist_listbox = tk.Listbox(root, font=("Helvetica", 15))  # Adjust font size here
 playlist_listbox.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.BOTH, expand=False)
-playlist_listbox.config(height=90, width=50)  # Adjust height here
+playlist_listbox.config(height=90, width=40)  # Adjust height here
 
 # Create scrollbar for the playlist listbox
 playlist_scrollbar = ttk.Scrollbar(root, orient=tk.VERTICAL, command=playlist_listbox.yview)
@@ -386,7 +390,7 @@ playlist_listbox.config(yscrollcommand=playlist_scrollbar.set)
 # Create the listbox to display songs
 song_listbox = tk.Listbox(root, font=("Helvetica", 15))  # Adjust font size here
 song_listbox.pack(side=tk.LEFT, padx=10, pady=10, fill=tk.BOTH, expand=False)
-song_listbox.config(height=90, width=70)  # Adjust height here
+song_listbox.config(height=90, width=50)  # Adjust height here
 
 song_scrollbar = ttk.Scrollbar(root, orient=tk.VERTICAL, command=song_listbox.yview)
 song_scrollbar.pack(side=tk.LEFT, fill=tk.Y)
