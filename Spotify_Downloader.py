@@ -42,11 +42,11 @@ def search_youtube_video(song_name, artist_name=None, album_name=None, skip_lyri
         query += f" {album_name}"
 
     if not skip_lyrics:
-        query += ""
+        pass
     else:
         query += " Song"
 
-    print(f"Searching YouTube with query: {query}")
+    print("Searching YouTube with query: {}".format(query))
 
     youtube = build("youtube", "v3", developerKey=api_key)
 
@@ -377,12 +377,10 @@ video_info_label.config(wraplength=700, height=10)
 spotify_playlist_entry = tk.Entry(root, font=("Helvetica", 15))
 spotify_playlist_entry.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X, expand=True)
 
-search_playlist_button = tk.Button(root, text="Search Playlist", font=("Helvetica", 20),
-                                   command=search_spotify_playlist)
+search_playlist_button = tk.Button(root, text="Search Playlist", font=("Helvetica", 20), command=search_spotify_playlist)
 search_playlist_button.pack(side=tk.TOP, padx=10, pady=10)
 
-get_playlists_button = tk.Button(root, text="Get Playlists", font=("Helvetica", 20),
-                                 command=get_playlists)
+get_playlists_button = tk.Button(root, text="Get Playlists", font=("Helvetica", 20), command=get_playlists)
 get_playlists_button.pack(pady=40)
 
 playlist_listbox.bind("<<ListboxSelect>>", get_playlist_songs)
@@ -394,12 +392,10 @@ download_buttons = []
 choose_download_button = tk.Button(root, text="Download This Song", font=("Helvetica", 20), command=choose_download)
 choose_download_button.pack(pady=20)
 
-download_whole_playlist_button = tk.Button(root, text="Download Whole Playlist", font=("Helvetica", 20),
-                                           command=download_whole_playlist)
+download_whole_playlist_button = tk.Button(root, text="Download Whole Playlist", font=("Helvetica", 20), command=download_whole_playlist)
 download_whole_playlist_button.pack(pady=40)
 
-create_youtube_button = tk.Button(root, text="Create YouTube Playlist", font=("Helvetica", 20),
-                                  command=create_youtube_playlist_from_spotify)
+create_youtube_button = tk.Button(root, text="Create YouTube Playlist", font=("Helvetica", 20), command=create_youtube_playlist_from_spotify)
 create_youtube_button.pack(pady=40)
 
 download_folder = filedialog.askdirectory()
