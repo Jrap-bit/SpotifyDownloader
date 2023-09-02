@@ -58,11 +58,10 @@ def search_youtube_video(song_name, artist_name=None, album_name=None, skip_lyri
 
     video_info = []
     for search_result in search_response.get("items", []):
-        if search_result["id"]["kind"] == "youtube#video":
-            video_id = search_result["id"]["videoId"]
-            video_title = search_result["snippet"]["title"]
-            video_link = f"https://www.youtube.com/watch?v={video_id}"
-            video_info.append({"title": video_title, "link": video_link})
+        video_id = search_result["id"]["videoId"]
+        video_title = search_result["snippet"]["title"]
+        video_link = f"https://www.youtube.com/watch?v={video_id}"
+        video_info.append({"title": video_title, "link": video_link})
 
     return video_info[:2]
 
@@ -155,7 +154,6 @@ def choose_download():
         if selected_playlist_index:
             selected_playlist = playlist_listbox.get(selected_playlist_index[0])
             playlist_id = get_playlist_id_by_name(selected_playlist)
-            print(playlist_id)
             if playlist_id is None:
                 playlist_id = playlist_id_global
             if playlist_id:
